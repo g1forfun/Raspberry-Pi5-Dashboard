@@ -26,6 +26,14 @@
       border: none;
       border-radius: 5px;
     }
+    canvas {
+        width: 100%;
+        height: auto;
+        max-width: 90vw;  /* Maximum width is 90% of viewport width */
+        max-height: 50vh; /* Maximum height is 50% of viewport height */
+        margin: 20px auto;
+        display: block;
+    }
     .progress-bar {
       width: 80%;
       height: 20px;
@@ -41,6 +49,9 @@
       background-color: #007BFF;
       transition: width 0.5s ease-in-out;
     }
+
+
+
   </style>
 </head>
 <body>
@@ -68,17 +79,15 @@
     let updateInterval = 3000;
 
     function toggleDarkMode() {
-      document.body.classList.toggle("dark-mode");
-      const darkModeEnabled = document.body.classList.contains("dark-mode");
-      localStorage.setItem("darkMode", darkModeEnabled ? "enabled" : "disabled");
+    document.body.classList.toggle("dark-mode");
+    const darkModeEnabled = document.body.classList.contains("dark-mode");
 
-  // Ensure the button text updates
-      const darkModeButton = document.getElementById("darkModeToggle");
-      if (darkModeButton) {
-         darkModeButton.innerHTML = darkModeEnabled ? "&#9728; Toggle Light Mode" : "&#127769; Toggle Dark Mode";
-  }
+    // Save preference in localStorage
+    localStorage.setItem("darkMode", darkModeEnabled ? "enabled" : "disabled");
 
-  updateChartColors(); // Update charts when toggling mode
+    // Ensure the button text updates dynamically
+    document.getElementById("darkModeToggle").innerHTML = darkModeEnabled ? "&#9728; Toggle Light Mode" : "&#127769; Toggle Dark Mode";
+    updateChartColors(); // Update charts when toggling mode
 }
 
     function toggleMonitoring() {
@@ -115,13 +124,25 @@ function changeUpdateInterval(value) {
       ramChart = new Chart(ctx2, { type: 'line', data: { labels: [], datasets: [{ label: 'RAM Usage (%)', borderColor: 'blue', borderWidth: 3, data: [], fill: false }] } });
       diskChart = new Chart(ctx3, { type: 'line', data: { labels: [], datasets: [{ label: 'Disk Usage (%)', borderColor: 'green', borderWidth: 3, data: [], fill: false }] } });
     }
+    function resizeCharts() {
+    // Dynamically adjust canvas size
+    const canvases = document.querySelectorAll("canvas");
+    canvases.forEach(canvas => {
+        canvas.style.width = "100%";
+        canvas.style.height = "auto";
+    });
+
+    // Force Chart.js to update the chart size
+    cpuChart.update();
+    ramChart.update();
+    diskChart.update();
+}
 
     async function fetchStats() {
       const response = await fetch('/stats');
       const data = await response.json();
       document.getElementById('uptime').innerText = data.uptime;
-      document.getElementById('cpu-speed').innerText = data.cpu_speed[data.cpu_speed.length - 1] + " MHz";
-      document.getElementById('gpu-speed').innerText = data.gpu_speed ? data.gpu_speed + ' MHz' : 'N/A';
+      document.getElementById('cpu-speed').innerText = data.cpu_speed[data.cpu_speed.length - 1] + " MHz";      
       document.getElementById('cpu').innerText = data.cpu_usage[data.cpu_usage.length - 1] + "%";
       document.getElementById('ram').innerText = data.ram_usage[data.ram_usage.length - 1] + "%";
       document.getElementById('disk').innerText = data.disk_usage[data.disk_usage.length - 1] + "%";
@@ -153,6 +174,15 @@ function changeUpdateInterval(value) {
     window.onload = function() {
     createCharts();
 
+    // Restore dark mode preference from localStorage (Preserving existing logic)
+    const darkModeEnabled = localStorage.getItem("darkMode") === "enabled";
+    if (darkModeEnabled) {
+        document.body.classList.add("dark-mode");
+        document.getElementById("darkModeToggle").innerHTML = "&#9728; Toggle Light Mode";
+    } else {
+        document.getElementById("darkModeToggle").innerHTML = "&#127769; Toggle Dark Mode";
+    }
+
     // Load saved interval from localStorage
     const savedInterval = localStorage.getItem("updateInterval");
     if (savedInterval) {
@@ -163,6 +193,9 @@ function changeUpdateInterval(value) {
 
     fetchStats();
     monitoringInterval = setInterval(fetchStats, updateInterval);
+
+    // Resize charts when window size changes
+    window.onresize = resizeCharts;
 };
   </script>
 </body>
