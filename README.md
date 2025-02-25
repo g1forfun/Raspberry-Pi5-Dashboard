@@ -2,13 +2,15 @@
 
 A real-time web-based monitoring dashboard for your Raspberry Pi, built with **Flask** and **Chart.js**.
 
-## 🚀 Features
-- 📡 **Real-time system monitoring**: View CPU, CPU Speed, RAM, Disk, Uptime and Temperature usage.  
-- 📈 **Live graphs** with smooth animations and dynamic updates.  
-- 🎛 **Adjustable update interval**: Control refresh speed using a slider.  
-- 🌙 **Dark mode support**: Switch between light and dark themes dynamically.  
-- ⏸ **Start/Pause Monitoring**: Pause or resume system monitoring at any time.  
-- 🔧 **Runs on boot**: Automatically starts when the Raspberry Pi is powered on.  
+🚀 Features
+
+    📡 Real-time system monitoring: View CPU, CPU Speed, GPU Speed, RAM, Disk, Uptime, and Temperature usage.
+    📈 Live graphs with smooth animations and dynamic updates.
+    🎛 Adjustable update interval: Control refresh speed using a slider.
+    🌙 Dark mode support: Switch between light and dark themes dynamically.
+    ⏸ Start/Pause Monitoring: Pause or resume system monitoring at any time.
+    🗃 Data persistence with SQLite: System metrics are stored in a local SQLite database for historical tracking and analysis.
+    🔧 Runs on boot: Automatically starts when the Raspberry Pi is powered on. 
 
 ---
 
