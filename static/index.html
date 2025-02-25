@@ -6,7 +6,6 @@
   <title>Raspberry Pi Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Default (Light) Mode */
     body {
       font-family: Arial, sans-serif;
       text-align: center;
@@ -14,14 +13,10 @@
       color: black;
       transition: background-color 0.3s, color 0.3s;
     }
-    
-    /* Dark Mode */
     body.dark-mode {
       background-color: #1e1e1e;
       color: white;
     }
-
-    /* Toggle Button Styling */
     button {
       padding: 10px;
       margin: 10px;
@@ -31,23 +26,6 @@
       border: none;
       border-radius: 5px;
     }
-
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    /* Charts */
-    /* Increase Canvas Size for Better Desktop View */
-    canvas {
-     max-width: 900px; /* Increased from 600px */
-     max-height: 400px; /* Increased height */
-     width: 90%;
-     height: auto;
-     margin: 20px auto;
-     display: block;
-}
-
-    /* Progress Bars */
     .progress-bar {
       width: 80%;
       height: 20px;
@@ -57,17 +35,11 @@
       margin: 10px auto;
       border: 1px solid #444;
     }
-
     .fill {
       height: 100%;
       width: 0%;
       background-color: #007BFF;
-      transition: width 0.5s ease-in-out, background-color 0.3s;
-    }
-
-    /* Dark Mode Colors for Progress Bars */
-    body.dark-mode .fill {
-      background-color: #00e676 !important; /* Green in Dark Mode */
+      transition: width 0.5s ease-in-out;
     }
   </style>
 </head>
@@ -75,240 +47,123 @@
   <h1>Raspberry Pi Dashboard</h1>
   <p><strong>Update Interval: <span id="intervalDisplay">3</span> sec</strong></p>
   <input type="range" id="updateInterval" min="1" max="10" value="3" oninput="changeUpdateInterval(this.value)">
-
-  <!-- Dark Mode Toggle Button -->
-  <button onclick="toggleDarkMode()">&#127769; Toggle Dark Mode</button>
+  <button id="darkModeToggle" onclick="toggleDarkMode()">&#127769; Toggle Dark Mode</button>
   <button id="monitorToggle" onclick="toggleMonitoring()">&#9208; Pause Monitoring</button>
-
-  <p><strong>CPU Speed:</strong> <span id="cpu-speed">Loading...</span> MHz</p>
-
+  <p><strong>CPU Speed:</strong> <span id="cpu-speed">Loading...</span></p>
+  <p><strong>GPU Speed:</strong> <span id="gpu-speed">Loading...</span></p>
   <p><strong>CPU Usage:</strong> <span id="cpu">Loading...</span></p>
   <div class="progress-bar"><div id="cpu-bar" class="fill"></div></div>
-
   <p><strong>RAM Usage:</strong> <span id="ram">Loading...</span></p>
   <div class="progress-bar"><div id="ram-bar" class="fill"></div></div>
-
   <p><strong>Disk Usage:</strong> <span id="disk">Loading...</span></p>
   <div class="progress-bar"><div id="disk-bar" class="fill"></div></div>
-
-  <p><strong>Temperature:</strong> <span id="temp">Loading...</span></p>
   <p><strong>Uptime:</strong> <span id="uptime">Loading...</span></p>
-
   <canvas id="cpuChart"></canvas>
   <canvas id="ramChart"></canvas>
   <canvas id="diskChart"></canvas>
-
   <script>
     let cpuChart, ramChart, diskChart;
     let monitoringActive = true;
     let monitoringInterval;
+    let updateInterval = 3000;
 
-    // Dark Mode Toggle Function
     function toggleDarkMode() {
       document.body.classList.toggle("dark-mode");
+      const darkModeEnabled = document.body.classList.contains("dark-mode");
+      localStorage.setItem("darkMode", darkModeEnabled ? "enabled" : "disabled");
 
-      // Save preference in localStorage
-      if (document.body.classList.contains("dark-mode")) {
-        localStorage.setItem("darkMode", "enabled");
-      } else {
-        localStorage.setItem("darkMode", "disabled");
-      }
+  // Ensure the button text updates
+      const darkModeButton = document.getElementById("darkModeToggle");
+      if (darkModeButton) {
+         darkModeButton.innerHTML = darkModeEnabled ? "&#9728; Toggle Light Mode" : "&#127769; Toggle Dark Mode";
+  }
 
-      updateChartColors(); // Update charts when toggling mode
-    }
-
-    function createCharts() {
-    const ctx1 = document.getElementById('cpuChart').getContext('2d');
-    const ctx2 = document.getElementById('ramChart').getContext('2d');
-    const ctx3 = document.getElementById('diskChart').getContext('2d');
-
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: false, // Allows manual width/height adjustments
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: "rgba(200, 200, 200, 0.2)" // Light grid lines
-                },
-                ticks: {
-                    font: {
-                        size: 14 // Bigger font for Y-axis
-                    }
-                }
-            },
-            x: {
-                grid: {
-                    color: "rgba(200, 200, 200, 0.2)"
-                },
-                ticks: {
-                    font: {
-                        size: 14 // Bigger font for X-axis
-                    }
-                }
-            }
-        },
-        plugins: {
-            legend: {
-                labels: {
-                    font: {
-                        size: 14 // Bigger legend text
-                    }
-                }
-            }
-        }
-    };
-
-    cpuChart = new Chart(ctx1, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'CPU Usage (%)',
-                borderColor: 'red',
-                borderWidth: 3, // Thicker line
-                data: [],
-                fill: false
-            }]
-        },
-        options: chartOptions
-    });
-
-    ramChart = new Chart(ctx2, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'RAM Usage (%)',
-                borderColor: 'blue',
-                borderWidth: 3,
-                data: [],
-                fill: false
-            }]
-        },
-        options: chartOptions
-    });
-
-    diskChart = new Chart(ctx3, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Disk Usage (%)',
-                borderColor: 'green',
-                borderWidth: 3,
-                data: [],
-                fill: false
-            }]
-        },
-        options: chartOptions
-    });
+  updateChartColors(); // Update charts when toggling mode
 }
 
-    function updateChartColors() {
-      const darkModeEnabled = document.body.classList.contains("dark-mode");
+    function toggleMonitoring() {
+      monitoringActive = !monitoringActive;
+      const button = document.getElementById("monitorToggle");
+      if (monitoringActive) {
+        button.innerHTML = "&#9208; Pause Monitoring";
+        fetchStats();
+        monitoringInterval = setInterval(fetchStats, updateInterval);
+      } else {
+        button.innerHTML = "&#9658; Start Monitoring";
+        clearInterval(monitoringInterval);
+      }
+    }
 
-      cpuChart.data.datasets[0].borderColor = darkModeEnabled ? "#00e676" : "red"; // Green in dark mode
-      ramChart.data.datasets[0].borderColor = darkModeEnabled ? "#ffeb3b" : "blue"; // Yellow in dark mode
-      diskChart.data.datasets[0].borderColor = darkModeEnabled ? "#ff5722" : "green"; // Orange in dark mode
+function changeUpdateInterval(value) {
+    document.getElementById("intervalDisplay").innerText = value;
+    updateInterval = value * 1000;
 
-      cpuChart.update();
-      ramChart.update();
-      diskChart.update();
+    // Save the selected interval in localStorage
+    localStorage.setItem("updateInterval", value);
+
+    if (monitoringActive) {
+        clearInterval(monitoringInterval);
+        monitoringInterval = setInterval(fetchStats, updateInterval);
+    }
+}
+    
+    function createCharts() {
+      const ctx1 = document.getElementById('cpuChart').getContext('2d');
+      const ctx2 = document.getElementById('ramChart').getContext('2d');
+      const ctx3 = document.getElementById('diskChart').getContext('2d');
+      cpuChart = new Chart(ctx1, { type: 'line', data: { labels: [], datasets: [{ label: 'CPU Usage (%)', borderColor: 'red', borderWidth: 3, data: [], fill: false }] } });
+      ramChart = new Chart(ctx2, { type: 'line', data: { labels: [], datasets: [{ label: 'RAM Usage (%)', borderColor: 'blue', borderWidth: 3, data: [], fill: false }] } });
+      diskChart = new Chart(ctx3, { type: 'line', data: { labels: [], datasets: [{ label: 'Disk Usage (%)', borderColor: 'green', borderWidth: 3, data: [], fill: false }] } });
     }
 
     async function fetchStats() {
       const response = await fetch('/stats');
       const data = await response.json();
-
-      document.getElementById('cpu').innerText =
-        data.cpu_usage[data.cpu_usage.length - 1] + "%";
-      document.getElementById('cpu-speed').innerText = 
-	data.cpu_speed[data.cpu_speed.length - 1].toFixed(2);
-      document.getElementById('ram').innerText =
-        data.ram_usage[data.ram_usage.length - 1] + "%";
-      document.getElementById('disk').innerText =
-        data.disk_usage[data.disk_usage.length - 1] + "%";
-      document.getElementById('temp').innerHTML =
-        data.temperature[data.temperature.length - 1] + "&deg;C";
-      if (data.uptime) {
-          document.getElementById("uptime").innerText = data.uptime;
-      } else {
-          document.getElementById("uptime").innerText = "Fetching uptime...";
-}
-
+      document.getElementById('uptime').innerText = data.uptime;
+      document.getElementById('cpu-speed').innerText = data.cpu_speed[data.cpu_speed.length - 1] + " MHz";
+      document.getElementById('gpu-speed').innerText = data.gpu_speed ? data.gpu_speed + ' MHz' : 'N/A';
+      document.getElementById('cpu').innerText = data.cpu_usage[data.cpu_usage.length - 1] + "%";
+      document.getElementById('ram').innerText = data.ram_usage[data.ram_usage.length - 1] + "%";
+      document.getElementById('disk').innerText = data.disk_usage[data.disk_usage.length - 1] + "%";
+      document.getElementById('gpu-speed').innerText = data.gpu_speed[data.gpu_speed.length - 1] + ' MHz';
       updateProgressBar("cpu-bar", data.cpu_usage[data.cpu_usage.length - 1]);
       updateProgressBar("ram-bar", data.ram_usage[data.ram_usage.length - 1]);
       updateProgressBar("disk-bar", data.disk_usage[data.disk_usage.length - 1]);
-
-      updateCharts(
-        data.timestamps,
-        data.cpu_usage,
-        data.ram_usage,
-        data.disk_usage
-      );
+      updateCharts(data.timestamps, data.cpu_usage, data.ram_usage, data.disk_usage);
     }
 
     function updateProgressBar(id, value) {
       const bar = document.getElementById(id);
       bar.style.width = value + "%";
-      bar.style.backgroundColor = value > 80 ? "red" : "#007BFF"; // Turns red if usage > 80%
+      bar.style.backgroundColor = value > 80 ? "red" : "#007BFF";
     }
 
     function updateCharts(timestamps, cpu, ram, disk) {
-    if (cpuChart.data.labels.length > 20) { // Keep only last 20 data points
-        cpuChart.data.labels.shift();
-        cpuChart.data.datasets[0].data.shift();
-        ramChart.data.labels.shift();
-        ramChart.data.datasets[0].data.shift();
-        diskChart.data.labels.shift();
-        diskChart.data.datasets[0].data.shift();
+      updateChart(cpuChart, timestamps, cpu);
+      updateChart(ramChart, timestamps, ram);
+      updateChart(diskChart, timestamps, disk);
     }
 
-    cpuChart.data.labels.push(timestamps[timestamps.length - 1]);
-    cpuChart.data.datasets[0].data.push(cpu[cpu.length - 1]);
-    cpuChart.update();
-
-    ramChart.data.labels.push(timestamps[timestamps.length - 1]);
-    ramChart.data.datasets[0].data.push(ram[ram.length - 1]);
-    ramChart.update();
-
-    diskChart.data.labels.push(timestamps[timestamps.length - 1]);
-    diskChart.data.datasets[0].data.push(disk[disk.length - 1]);
-    diskChart.update();
-}
-    
-    function toggleMonitoring() {
-      monitoringActive = !monitoringActive;
-
-      if (monitoringActive) {
-          document.getElementById("monitorToggle").innerHTML = "&#10074;&#10074; Pause Monitoring";  // Pause symbol
-          fetchStats();  // Fetch once immediately
-          monitoringInterval = setInterval(fetchStats, 3000);
-      } else {
-          document.getElementById("monitorToggle").innerHTML = "&#9658; Start Monitoring";  // Play symbol
-          clearInterval(monitoringInterval);  // Stop auto-updating
-      }
+    function updateChart(chart, labels, data) {
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = data;
+      chart.update();
     }
-    function changeUpdateInterval(value) {
-    document.getElementById("intervalDisplay").innerText = value; // Update UI text
-    clearInterval(monitoringInterval); // Stop existing interval
-    monitoringInterval = setInterval(fetchStats, value * 1000); // Start with new interval
-}
 
-
-    // On Page Load
     window.onload = function() {
-      createCharts();
+    createCharts();
 
-      if (localStorage.getItem("darkMode") === "enabled") {
-        document.body.classList.add("dark-mode");
-      }
+    // Load saved interval from localStorage
+    const savedInterval = localStorage.getItem("updateInterval");
+    if (savedInterval) {
+        updateInterval = savedInterval * 1000;
+        document.getElementById("updateInterval").value = savedInterval;
+        document.getElementById("intervalDisplay").innerText = savedInterval;
+    }
 
-      updateChartColors(); // Apply saved colors
-      fetchStats();
-      monitoringInterval = setInterval(fetchStats, 3000);
-    };
+    fetchStats();
+    monitoringInterval = setInterval(fetchStats, updateInterval);
+};
   </script>
 </body>
 </html>
