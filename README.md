@@ -49,7 +49,7 @@ cd ~/rpi-dashboard
 
 ### 4️⃣ Clone the Repository
 ```sh
-git clone https://github.com/g1forfun/rpi-dashboard.git .
+git clone https://github.com/g1forfun/Raspberry-Pi5-Dashboard.git
 ```
 
 ### 5️⃣ Start the Flask Server
